@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>ECharts 数据导入</title>
+    <!-- <script src="chart.js"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.0/echarts.min.js"></script>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            text-align: left;
+        }
+        #file-import {
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+            width: 100%;
+        }
+        #charts-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: row;
+            flex-grow: 1; /* 让图表容器占据页面的主要部分 */
+        }
+        #year {
+            width: 20%; /* 每个图表占据的页面宽度 */
+            height: 100%; 
+            padding: 0px; 
+        }
+        #month {
+            width: 30%; 
+            height: 100%;
+            padding: 0px; 
+        }
+        #week {
+            width: 50%; 
+            height: 100%; 
+            padding: 0px; 
+        }    
+    </style>
+</head>
+<body>
+
+<div id="file-import">
+    <h2>导入原始数据</h2>
+    <p>数据格式要求：</p>
+    <ul>
+        <li>数据应为 CSV 格式文件，每一行代表一个时间点的数据。</li>
+        <li>CSV 文件应包含六列数据，分别对应 'Year、Month、Week' | '2023、Aug、WK50' | 'N' | 'D' | 'LT' | 'D/LT (%)'。</li>
+        <li>CSV 文件的第一行应包含列标题：'type' | 'x_scale' | 'N' | 'D' | 'LT' | 'Percentage'。</li>
+    </ul>
+    <input type="file" id="file-input" accept=".csv" />
+</div>
+
+<div id="charts-container">
+    <div id="year"></div>
+    <div id="month"></div>
+    <div id="week"></div>
+</div>
+
+<script type="text/javascript">
+    function createChart(containerId, titleText, categories, dataN, dataD, dataLT, dataPercentage) {
+        var chart = echarts.init(document.getElementById(containerId));
+        const colors = ['#5470C6', '#8FD5F3', '#91CC75','pink'];
+        var option = {
+            
+            title: {
+                text: titleText,
+                left: 'center', // 将标题居中显示
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'cross'
+                },
+                confine: true // 防止提示框溢出
+            },
+            legend: {
+                data: [ 'D', 'LT','N', 'D&LT (%)'],
+                top: 30 // 将图例移动到顶部
+            },
+            dataZoom: 
+            {
+                id: 'dataZoomX',
+                type: 'slider',
+                xAxisIndex: [0],
+                filterMode: 'filter'
+            },
+            toolbox: {
+                feature: {
+                dataView: { show: true, readOnly: false },
+                restore: { show: true },
+                saveAsImage: { show: true }
+                }
+            },
+            grid: {
+                top: '20%', // 调整顶部空间
+                bottom: '10%', // 调整底部空间
+                left: '10%', // 调整左侧空间
+                right: '10%' // 调整右侧空间
+            },
+            xAxis: {
+                type: 'category',
+                data: categories,
+                boundaryGap: [0.1, 0.1], // 调整开始和结束处的间隔
+                axisTick: {
+                    alignWithLabel: true // 使刻度线与数据标签对齐
+                },
+                axisLabel: {
+                show: true,
+                fontSize: 16, // 设置轴标签字体大小
+                color: '#333'
+                
+            }
+            },
+            yAxis: [
+                {
+                    type: 'value',
+                    name: 'TO',
+                    position: 'left',
+                    axisLine: { show: true },
+                    axisLabel: { 
+                    formatter: '{value}',
+                    }
+                },
+                {
+                    type: 'value',
+                    name: 'D&LT (%)',
+                    position: 'right',
+                    axisLine: { show: true },
+                    axisLabel: {
+                    formatter: '{value}%'},
+                    min:-60,
+                    max:30,
+
+                }
+            ],
+            series: [
+
+                {
+                    name: 'D',
+                    type: 'bar',
+                    data: dataD,
+                    stack: 'x',
+                    label: {
+                        show: true,
+                        position: 'inside',
+                        formatter: '{c}'
+                    },
+                    itemStyle: {
+                    color: colors[0]
+                    }
+                },
+                {
+                    name: 'LT',
+                    type: 'bar',
+                    data: dataLT,
+                    stack: 'x',
+                    label: {
+                        show: true,
+                        position: 'inside',
+                        formatter: '{c}'
+                    },
+                    itemStyle: {
+                    color: colors[1]
+                    }
+                },
+                {
+                    name: 'N',
+                    type: 'bar',
+                    data: dataN,
+                    stack: 'x',
+                    label: {
+                        show: true,
+                        position: 'inside',
+                        formatter: '{c}'
+                    },
+                    itemStyle: {
+                    color: colors[2]
+                    }
+                },
+                {
+                    name: 'D&LT (%)',
+                    type: 'line',
+                    yAxisIndex: 1,
+                    data: dataPercentage,
+                    label: {
+                        show: true,
+                        position: 'inside',
+                        formatter: '{c}%'
+                    },
+                    itemStyle: {
+                    color: colors[3]
+                    }
+                }
+            ]
+        };
+        chart.setOption(option);
+    }
+
+        // 处理文件上传事件
+    document.getElementById('file-input').addEventListener('change', function(event) {
+        var file = event.target.files[0];
+        if (file) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var csvData = e.target.result;
+                var rows = csvData.split('\n');
+
+                // 存储年、月、周数据的映射表
+                var yearData = [];
+                var monthData = [];
+                var weekData = [];
+
+                // 跳过第一行（标题行）
+                for (var i = 1; i < rows.length; i++) {
+                    var row = rows[i].trim();
+                    if (row) {
+                        var cols = row.split(',');
+
+                        var type = cols[0]; // 获取 ID 列的值
+                        var x_scale = cols[1]; // 获取日期或时间段信息
+                        var D = Math.round(parseFloat(cols[2])); // 转换为整数
+                        var LT = Math.round(parseFloat(cols[3])); // 转换为整数
+                        var N = Math.round(parseFloat(cols[4])); // 转换为整数
+                        var percentage = (parseFloat(cols[5]) * 100).toFixed(2); // 转换为百分数并保留两位小数
+
+                        // 根据 ID 列的值分类数据
+                        if (type === 'Year') {
+                            yearData.push({ x_scale, D, LT, N, percentage });
+                        } else if (type === 'Month') {
+                            monthData.push({ x_scale, D, LT, N, percentage });
+                        } else if (type === 'Week') {
+                            weekData.push({ x_scale, D, LT, N, percentage });
+                        }
+                    }
+                }
+
+                // 处理年数据
+                var yearCategories = yearData.map(data => data.x_scale);
+                var yearN = yearData.map(data => data.N);
+                var yearD = yearData.map(data => data.D);
+                var yearLT = yearData.map(data => data.LT);
+                var yearPercentage = yearData.map(data => data.percentage);
+                createChart('year', 'Annual trends', yearCategories, yearN, yearD, yearLT, yearPercentage);
+
+                // 处理月数据
+                var monthCategories = monthData.map(data => data.x_scale);
+                var monthN = monthData.map(data => data.N);
+                var monthD = monthData.map(data => data.D);
+                var monthLT = monthData.map(data => data.LT);
+                var monthPercentage = monthData.map(data => data.percentage);
+                createChart('month', 'Monthly trends', monthCategories, monthN, monthD, monthLT, monthPercentage);
+
+                // 处理周数据
+                var weekCategories = weekData.map(data => data.x_scale);
+                var weekN = weekData.map(data => data.N);
+                var weekD = weekData.map(data => data.D);
+                var weekLT = weekData.map(data => data.LT);
+                var weekPercentage = weekData.map(data => data.percentage);
+                createChart('week', 'Weekly trend', weekCategories, weekN, weekD, weekLT, weekPercentage);
+            };
+            reader.readAsText(file);
+        }
+    });
+
+    // 初始化示例数据
+    createChart('year', '年数据', ['2020', '2021', '2022', '2023'], [306, 561, 521, 471], [101, 80, 84, 100], [1, 2, 1, 0], [6.2, 3.2, 3.4, 3.9]);
+    createChart('month', '月数据', ['June', 'July', 'August', 'September'], [50, 60, 70, 80], [15, 25, 35, 45], [5, 5, 10, 15], [3, 2, 2, 3]);
+    createChart('week', '周数据', ['Week1', 'Week2', 'Week3', 'Week4'], [100, 120, 140, 160], [30, 40, 50, 60], [10, 15, 20, 25], [5, 4, 3, 5]);
+
+</script>
+</body>
+</html>
